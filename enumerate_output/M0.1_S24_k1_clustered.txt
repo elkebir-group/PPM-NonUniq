@@ -1,0 +1,25 @@
+6 #trees
+3 #edges, tree 1
+1;2 3
+0 4
+0 1;2
+3 #edges, tree 2
+0 1;2
+0 3
+0 4
+3 #edges, tree 3
+1;2 4
+0 3
+0 1;2
+3 #edges, tree 4
+3 4
+0 3
+0 1;2
+3 #edges, tree 5
+0 1;2
+1;2 3
+1;2 4
+3 #edges, tree 6
+0 1;2
+1;2 3
+3 4

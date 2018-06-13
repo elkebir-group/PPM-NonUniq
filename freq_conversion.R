@@ -5,7 +5,7 @@
 
 library(readr)
 
-rewrite_tree2freq_for_downsample <- function(filename, coverage = 10000, input_folder = './tree2freqs_output/', output_folder = ',/downsample_input/'){
+rewrite_tree2freq_for_downsample <- function(filename, coverage = 10000, input_folder = './tree2freqs_output/', output_folder = './downsample_input/'){
   output_file <- paste(output_folder, filename, sep = '')
   file <- read_lines(paste(input_folder, filename, sep = ''))
   if (length(file) < 2){return()}

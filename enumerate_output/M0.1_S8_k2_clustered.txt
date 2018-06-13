@@ -1,0 +1,7 @@
+2 #trees
+2 #edges, tree 1
+0 2
+0 1
+2 #edges, tree 2
+0 2
+2 1
