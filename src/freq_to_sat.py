@@ -72,22 +72,26 @@ def to_bit_array(val, bits):
 def to_SAT(G, F, m, n, bits):
     # first spanning trees
 
+    sys.stderr.write("Generating variables x[(c,d)] for each edge (c,d)...")
     # X[(c,d)] = 1 iff (c,d) is an edge in T
     X = {}
     for (c, d) in G:
         X[(c, d)] = exprvar("x_%d_%d" % (c, d))
+    sys.stderr.write(" Done!\n")
 
     # H[p, d, c, i] = F[p, d, i] & X[c, d]
+    sys.stderr.write("Generating expressions H[p, d, c, i] = F[p, d, i] & X[c, d]...")
     H = [[{} for d in range(n)] for p in range(m)]
     for p in range(m):
         for d in range(n):
             for c in [cc for (cc, dd) in G if dd == d]:
                 H[p][d][c] = [And(F[p][d][i], X[(c, d)]) for i in range(bits)]
+    sys.stderr.write(" Done!\n")
 
     # FF[p, c] = sum of frequencies of children of c in sample p
-    FF = exprvars('ff', m, n + 1, bits)
+    sys.stderr.write("Generating expressions FF[p, c] = sum of frequencies of children of c in sample p...")
+    #FF = exprvars('ff', m, n + 1, bits)
     FF = [ [ [ None for i in range(bits) ] for c in range(n + 1)] for p in range(m) ]
-
     phi = expr(1)
     for p in range(m):
         for c in range(n + 1):
@@ -97,7 +101,7 @@ def to_SAT(G, F, m, n, bits):
                 assert((c,d) in G)
                 S, C = ripple_carry_add(H[p][d][c], S, carry)
                 carry = C[-1]
-                phi = phi & Not(carry)
+                phi = phi & Not(carry, simplify=False)
 
             for i in range(bits):
                 FF[p][c][i] = S[i]
@@ -109,9 +113,10 @@ def to_SAT(G, F, m, n, bits):
                 for i in range(bits)[::-1]:
                     ineq_i = Not(F[p][c][i]) & FF[p][c][i]
                     for j in range(i + 1, bits):
-                        ineq_i = ineq_i & Equal(F[p][c][j], FF[p][c][j])
+                        ineq_i = ineq_i & Equal(F[p][c][j], FF[p][c][j], simplify=False)
                     ineq = ineq | ineq_i
                 phi = phi & ~ineq
+    sys.stderr.write(" Done\n")
 
     # ADD SPANNING TREE CONSTRAINTS
     for d in range(n):
@@ -138,7 +143,10 @@ if __name__ == "__main__":
     FFF = [ [ to_bit_array(FF[p][c], bits) for c in range(n) ] for p in range(m) ]
     X, phi = to_SAT(G, FFF, m, n, bits)
 
+    sys.stderr.write("Convert to CNF...\n")
     mapping, CNF = expr2dimacscnf(phi.to_cnf())
+    #print(phi)
+    #sys.stderr.write("Tseitin transform...\n")
     #mapping, CNF = expr2dimacscnf(phi.tseitin())
     for var in mapping:
         print("c", var, mapping[var])
