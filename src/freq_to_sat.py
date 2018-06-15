@@ -89,34 +89,59 @@ def to_SAT(G, F, m, n, bits):
     sys.stderr.write(" Done!\n")
 
     # FF[p, c] = sum of frequencies of children of c in sample p
-    sys.stderr.write("Generating expressions FF[p, c] = sum of frequencies of children of c in sample p...")
-    #FF = exprvars('ff', m, n + 1, bits)
-    FF = [ [ [ None for i in range(bits) ] for c in range(n + 1)] for p in range(m) ]
+#    FF = exprvars('ff', m, n + 1, bits)
+    SS = [ [ {} for c in range(n+1) ] for p in range(m) ]
+    CC = [ [ {} for c in range(n+1) ] for p in range(m) ]
+
+    #FF = [ [ [ None for i in range(bits) ] for c in range(n + 1)] for p in range(m) ]
     phi = expr(1)
     for p in range(m):
         for c in range(n + 1):
+            sys.stderr.write("Generating expressions FF[%d, %d] = sum of frequencies of children of %d in sample %d..." % (p, c, c, p))
+            sys.stderr.flush()
+
             S = [ 0 for i in range(bits) ]
             carry = 0
-            for d in [ dd for (cc, dd) in G if cc == c ]:
-                assert((c,d) in G)
-                S, C = ripple_carry_add(H[p][d][c], S, carry)
-                carry = C[-1]
-                phi = phi & Not(carry, simplify=False)
+            children = [ dd for (cc, dd) in G if cc == c ]
+            if len(children) == 1:
+                d = children[0]
+                SS[p][c][d] = exprvars('ss_%d_%d_%d' % (p,c,d), bits)
+                for i in range(bits):
+                    if F[p][d][i]:
+                        phi = phi & SS[p][c][d][i]
+                    else:
+                        phi = phi & Not(SS[p][c][d][i])
+            else:
+                for (idx, d) in enumerate(children):
+                    assert((c,d) in G)
 
-            for i in range(bits):
-                FF[p][c][i] = S[i]
-#                 phi = phi & Equal(FF[p][c][i], S[i])
+                    if idx == 0: continue
+                    if idx == 1:
+                        SS[p][c][d] = exprvars('ss_%d_%d_%d' % (p,c,d), bits)
+                        CC[p][c][d] = exprvars('cc_%d_%d_%d' % (p,c,d), bits)
+                        S, C = ripple_carry_add(H[p][d][c], H[p][children[0]][c], 0)
+                        phi = phi & And(*[Equal(SS[p][c][d][i], S[i]) for i in range(bits)])
+                        phi = phi & And(*[Equal(CC[p][c][d][i], C[i]) for i in range(bits)])
+                        phi = phi & Not(CC[p][c][d][-1])
+                    else:
+                        SS[p][c][d] = exprvars('ss_%d_%d_%d' % (p,c,d), bits)
+                        CC[p][c][d] = exprvars('cc_%d_%d_%d' % (p,c,d), bits)
+                        S, C = ripple_carry_add(H[p][d][c], SS[p][c][children[idx-1]], CC[p][c][children[idx-1]][-1])
+                        phi = phi & And(*[Equal(SS[p][c][d][i], S[i]) for i in range(bits)])
+                        phi = phi & And(*[Equal(CC[p][c][d][i], C[i]) for i in range(bits)])
+                        phi = phi & Not(CC[p][c][d][-1])
 
-            if c != n:
+            sys.stderr.write(" Done\n")
+
+            if c != n and len(children) > 0:
                 # INEQUALITY CONSTRAINTS
                 ineq = expr(0)
                 for i in range(bits)[::-1]:
-                    ineq_i = Not(F[p][c][i]) & FF[p][c][i]
+                    ineq_i = Not(F[p][c][i]) & SS[p][c][children[-1]][i]
                     for j in range(i + 1, bits):
-                        ineq_i = ineq_i & Equal(F[p][c][j], FF[p][c][j], simplify=False)
+                        ineq_i = ineq_i & Equal(F[p][c][j], SS[p][c][children[-1]][j], simplify=True)
                     ineq = ineq | ineq_i
                 phi = phi & ~ineq
-    sys.stderr.write(" Done\n")
 
     # ADD SPANNING TREE CONSTRAINTS
     for d in range(n):
@@ -125,7 +150,37 @@ def to_SAT(G, F, m, n, bits):
         parent_pairs = [(c1, c2) for (c1, d1) in G for (c2, d2) in G if c1 < c2 and d1 == d2 == d]
         phi = phi & And(*[ Not(And(X[(c1, d)], X[(c2, d)])) for (c1, c2) in parent_pairs])
 
-    return X, phi
+    return X, SS, phi
+
+def solve(G, F, X, SS, phi, m, n, bits):
+    l = list(phi.satisfy_all())
+    for idx,sol in enumerate(l):
+        with open("%d.dot" % idx, "w") as f:
+            f.write("digraph G {\n")
+            for c in range(n+1):
+                children = [ dd for (cc, dd) in G if cc == c ]
+                if len(children) > 0:
+                    f.write('  %d [label="%d\\n' % (c, c))
+                    for p in range(m):
+                        if c == n:
+                            f.write('1' * bits + ' - ')
+                        else:
+                            f.write("".join(map(str, F[p][c])) + ' - ')
+                        for i in range(bits):
+                            f.write(str(sol[SS[p][c][children[-1]][i]]))
+                        f.write("\\n")
+                    f.write('"]\n')
+                else:
+                    f.write('  %d [label="%d\\n' % (c, c))
+                    for p in range(m):
+                        f.write("".join(map(str, F[p][c])) + ' - ')
+                        f.write("\\n")
+                    f.write('"]\n')
+
+
+            for (c, d) in G:
+                f.write("  %d -> %d%s\n" % (c, d, " [color=red]" if sol[X[(c, d)]] == 1 else ""))
+            f.write("}\n")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -141,13 +196,12 @@ if __name__ == "__main__":
     #to_DOT(G, sys.stderr)
     FF = discretize(F_lb, m, n, bits)
     FFF = [ [ to_bit_array(FF[p][c], bits) for c in range(n) ] for p in range(m) ]
-    X, phi = to_SAT(G, FFF, m, n, bits)
+    X, SS, phi = to_SAT(G, FFF, m, n, bits)
 
     sys.stderr.write("Convert to CNF...\n")
-    mapping, CNF = expr2dimacscnf(phi.to_cnf())
-    #print(phi)
-    #sys.stderr.write("Tseitin transform...\n")
-    #mapping, CNF = expr2dimacscnf(phi.tseitin())
+    phi = phi.to_cnf()
+    mapping, CNF = expr2dimacscnf(phi)
     for var in mapping:
         print("c", var, mapping[var])
     print(CNF)
+    #solve(G, FFF, X, SS, phi, m, n, bits)
