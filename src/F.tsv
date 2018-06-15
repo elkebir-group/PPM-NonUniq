@@ -1,0 +1,10 @@
+1 #anatomical sites
+2 #samples
+3 #characters
+#sample_index	sample_label	anatomical_site_index	anatomical_site_label	character_index	char
+0	0	0	0	0	0	1	1
+1	1	0	0	0	0	.7	.7
+0	0	0	0	1	1	.25	.25
+1	1	0	0	1	1	.5	.5
+0	0	0	0	2	2	.2	.2
+1	1	0	0	2	2	.4	.4
