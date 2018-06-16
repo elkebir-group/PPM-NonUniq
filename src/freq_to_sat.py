@@ -205,7 +205,16 @@ if __name__ == "__main__":
     sys.stderr.write("Convert to CNF...\n")
     phi = phi.to_cnf()
     mapping, CNF = expr2dimacscnf(phi)
+    for (idx, (c,d)) in enumerate(G):
+        if idx % 10 == 0:
+            if idx > 0:
+                sys.stdout.write(" 0\n")
+            sys.stdout.write("c ind")
+        sys.stdout.write(" " + str(mapping[X[(c,d)]]))
+    sys.stdout.write(" 0\n")
+
     for var in mapping:
-        print("c", var, mapping[var])
-    print(CNF)
+        if str(var).isdigit():
+            print("c", var, mapping[var])
+    #print(CNF)
     #solve(G, FFF, X, SS, phi, m, n, bits)
