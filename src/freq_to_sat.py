@@ -151,7 +151,7 @@ def to_SAT(G, F, m, n, bits):
         phi = phi & And(*[ Not(And(X[(c1, d)], X[(c2, d)])) for (c1, c2) in parent_pairs])
 
     # ADD MONOCLONALITY CONSTRAINTS
-    parent_pairs = [(c1, c2) for (c1, d1) in G for (c2, d2) in G if c1 < c2 and c1 == c2 == n]
+    parent_pairs = [(d1, d2) for (c1, d1) in G for (c2, d2) in G if d1 < d2 and c1 == c2 == n]
     phi = phi & And(*[ Not(And(X[(c, d1)], X[(c, d2)])) for (d1, d2) in parent_pairs])
 
     return X, SS, phi
