@@ -1,0 +1,3 @@
+"direct path" "indirect path" "no path"
+"1" 0.9 0.954545454545455 1
+"2" 1 1 1
