@@ -5,7 +5,118 @@
 
 library(readr)
 
-rewrite_tree2freq_for_downsample <- function(filename, coverage = 10000, input_folder = './tree2freqs_output/', output_folder = './downsample_input/'){
+annotate_descendants <- function(tree, root, parents){
+  children <- which(tree[root,] == 1)
+  tree[parents, children]  <- 2
+  
+  parents <- c(parents, root)
+  for (child in children){
+    tree <- annotate_descendants(tree, child, parents)
+  }
+  return(tree)
+}
+
+write_tree <- function(lines, nodes = c()){
+  idx <- grep('edges', lines)
+  # print(lines)
+  num_edges <- as.numeric(strsplit(lines[idx], split = ' #edges')[[1]][1])
+  # extract nodes in tree
+  if (length(nodes) == 0){
+    for (i in (idx+1):(idx+num_edges)){
+      if (grepl('_P',lines[i]) | grepl('GL',lines[i])){next}
+      elems <- strsplit(lines[i], split = " ")[[1]]
+      nodes <- c(nodes, elems)
+    }
+    nodes <- unique(nodes)
+  }
+  # print(length(nodes))
+  # build tree as matrix; 0 is no relation, 1 is parent, 2 is ancestor; row is higher on tree, column is lower
+  tree <- matrix(data = '0', nrow = length(nodes), ncol = length(nodes))
+  rownames(tree) <- nodes
+  colnames(tree) <- nodes
+  
+  for (i in (idx+1):(idx+num_edges)){
+    if (grepl('_P',lines[i]) | grepl('GL',lines[i])){next}
+    elems <- strsplit(lines[i], split = " ")[[1]]
+    tree[elems[1], elems[2]] <- 1
+    # if (all(elems %in% rownames(tree))){
+    #   tree[elems[1], elems[2]] <- 1
+    # }
+  }
+  
+  tree <- annotate_descendants(tree, 1, c())
+  return(tree)
+}
+
+compare_trees <- function(target_tree, ref_tree){
+  
+  branching_mtx <- function(tree){
+    mtx <- tree != 0
+    mtx[lower.tri(mtx, diag = TRUE)] <- TRUE
+    # paths <- which(mtx)
+    # mtx <- t(mtx)
+    # mtx[paths] <- TRUE
+    return(mtx)
+  }
+  
+  # parent == 1, ancecstor == 2
+  true_parents <- length(which(ref_tree == 1))
+  true_ancestors <- length(which(ref_tree == 1 | ref_tree == 2))
+
+  captured_parents <- length(which(target_tree == 1 & ref_tree == 1))
+  captured_ancestors <- length(which(target_tree != 0 & ref_tree != 0))
+  
+  parentage_accuracy <- captured_parents/true_parents
+  ancestor_accuracy <- captured_ancestors/true_ancestors
+  
+  target_branching <- branching_mtx(target_tree)
+  ref_branching <- branching_mtx(ref_tree)
+  
+  true_branching <- length(which(!ref_branching))
+  captured_branching <- length(which(!target_branching & !ref_branching))
+  
+  branching_accuracy <- captured_branching/true_branching
+    
+  return(c(parentage_accuracy, ancestor_accuracy, branching_accuracy))
+}
+
+iterate_inferred_tree_list <- function(inferred_lines, true_lines){
+  true_tree <- write_tree(true_lines)
+  nodes <- rownames(true_tree)
+  idxs <- grep('#edges', inferred_lines)
+  n_trees <- length(idxs)
+  # print(n_trees)
+  accuracy <- matrix(data = 0, nrow = n_trees, ncol = 3)
+  colnames(accuracy) <- c('direct path', 'indirect path', 'no path')
+  accuracy_idx <- 1
+  
+  for (i in idxs){
+    num_edges <- as.numeric(strsplit(inferred_lines[i], split = ' #edges')[[1]][1])
+    # print(num_edges)
+    tree <- write_tree(inferred_lines[i:(i+num_edges)], nodes = nodes)
+    compar <- compare_trees(tree, true_tree)
+    accuracy[accuracy_idx,1] <- compar[1]
+    accuracy[accuracy_idx,2] <- compar[2]
+    accuracy[accuracy_idx,3] <- compar[3]
+    accuracy_idx <- accuracy_idx+1
+  }
+  
+  return(accuracy)
+}
+
+compare_spruce_output <- function(inferred_tree_file, true_tree_file, output_filename){
+  true_tree <- read_lines(true_tree_file)
+  inferred_trees <- read_lines(inferred_tree_file)
+  # n_inferred_lines <- length(inferred_trees)
+  # inferred_trees <- inferred_trees[2:n_inferred_lines]
+  
+  accuracy_matrix <- iterate_inferred_tree_list(inferred_trees, true_tree)
+  write.table(accuracy_matrix, file = output_filename)
+  return(accuracy_matrix)
+}
+
+rewrite_tree2freq_for_downsample <- function(filename, coverage = 10000, input_folder = '~/GitHub/VAFFP-NonUniq/tree2freqs_output/', 
+                                             output_folder = '~/GitHub/VAFFP-NonUniq/downsample_input/'){
   output_file <- paste(output_folder, filename, sep = '')
   file <- read_lines(paste(input_folder, filename, sep = ''))
   if (length(file) < 2){return()}
@@ -14,11 +125,12 @@ rewrite_tree2freq_for_downsample <- function(filename, coverage = 10000, input_f
   table <- file[c(5:length(file))]
   write_lines(table, 'temp.txt')
   mtx <- read_delim("temp.txt", "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
-  colnames(mtx) <- c('sample_index','sample_label','anatomical_site_index','anatomical_site_label','character_index','character_label','ref','var')
+  colnames(mtx) <- c('sample_index','sample_label','anatomical_site_index','anatomical_site_label',
+                     'character_index','character_label','ref','var')
   
   mtx[,7] <- floor(coverage*(1-mtx[,8]))
   mtx[,8] <- coverage-mtx[,7]
-  
+  # mtx <- format(mtx, scientific = FALSE)
   write_tsv(mtx, 'temp.txt')
   new_file <- read_lines('temp.txt')
   new_file[1] <- paste('#', new_file[1], sep = '')
@@ -38,7 +150,10 @@ rewrite_tree2freq_for_downsample_wrapper <- function(M = c(0.1,1,10), S = c(0:30
   }
 }
 
-rewrite_downsample_for_spruce <- function(freqs_filename, downsample_filename, coverage = 10000, downsample_input_folder = './downsample_output/', freqs_input_folder = './reads2freqs_output/', output_folder = './spruce_input/'){
+rewrite_downsample_for_spruce <- function(freqs_filename, downsample_filename, coverage = 10000, 
+                                          downsample_input_folder = '~/GitHub/VAFFP-NonUniq/downsample_output/', 
+                                          freqs_input_folder = '~/GitHub/VAFFP-NonUniq/reads2freqs_output/', 
+                                          output_folder = '~/GitHub/VAFFP-NonUniq/spruce_input/'){
   output_file <- paste(output_folder, freqs_filename, sep = '')
   
   freqs_file <- read_lines(paste(freqs_input_folder, freqs_filename, sep = ''))
@@ -52,13 +167,15 @@ rewrite_downsample_for_spruce <- function(freqs_filename, downsample_filename, c
   table <- downsample_file[c(5:length(downsample_file))]
   write_lines(table, 'temp.txt')
   downsample_mtx <- read_delim("temp.txt", "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
-  colnames(downsample_mtx) <- c('sample_index','sample_label','anatomical_site_index','anatomical_site_label','character_index','character_label','ref','var')
+  colnames(downsample_mtx) <- c('sample_index','sample_label','anatomical_site_index',
+                                'anatomical_site_label','character_index','character_label','ref','var')
   f_avg <- downsample_mtx[,8]/(downsample_mtx[,8]+downsample_mtx[,7])
   
   table <- freqs_file[c(5:length(freqs_file))]
   write_lines(table, 'temp.txt')
   freqs_mtx <- read_delim("temp.txt", "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
-  colnames(freqs_mtx) <- c('sample_index','sample_label','anatomical_site_index','anatomical_site_label','character_index','character_label','f-','f+')
+  colnames(freqs_mtx) <- c('sample_index','sample_label','anatomical_site_index','anatomical_site_label',
+                           'character_index','character_label','f-','f+')
   sample_idx  <- freqs_mtx[,1]
   sample_label  <- freqs_mtx[,2]
   snv_idx   <- freqs_mtx[,5]
@@ -72,9 +189,9 @@ rewrite_downsample_for_spruce <- function(freqs_filename, downsample_filename, c
   output_mtx[,2] <- sample_label
   output_mtx[,3] <- snv_idx
   output_mtx[,4] <- snv_idx
-  output_mtx[,5] <- f_minus
-  output_mtx[,6] <- f_avg
-  output_mtx[,7] <- f_plus
+  output_mtx[,5] <- f_minus/2
+  output_mtx[,6] <- f_avg/2
+  output_mtx[,7] <- f_plus/2
   
   # set x,y,mu
   output_mtx[,8] <- as.integer(1)
@@ -87,7 +204,7 @@ rewrite_downsample_for_spruce <- function(freqs_filename, downsample_filename, c
   new_file <- read_lines('temp.txt')
   new_file[1] <- paste('#', new_file[1], sep = '')
   # print(file[1:2])
-  new_file <- c(freqs_file[1:2], new_file)
+  new_file <- c(freqs_file[2:3], new_file)
   m <- strsplit(new_file[1], split = '#')[[1]][1]
   n <- strsplit(new_file[2], split = '#')[[1]][1]
   
@@ -128,7 +245,7 @@ num_snv_analysis <- function(M = c(0.1,1,10), S = c(0:30)){
   for (m in 1:length(M)){
     for (s in 1:length(S)){
       file <- paste('freqs_M', M[m], '_S', S[s], '.txt', sep = '')
-      folder <- './tree2freqs_output/'
+      folder <- '~/GitHub/VAFFP-NonUniq/tree2freqs_output/'
       filename <- paste(folder, file, sep = '')
       lines <- read_lines(filename)
       if (length(lines) < 4){next}
@@ -147,16 +264,109 @@ num_snv_analysis <- function(M = c(0.1,1,10), S = c(0:30)){
   return(snv_df)
 }
 
+iterate_accuracy <- function(S = 0:30, M = c(0.1,0.2,0.3,0.4), K = c(1,2,5,10)){
+  input_folder <- 'enumerate_output/'
+  output_folder <- 'accuracy_output/'
+  base_input_filename <- '_clustered.txt'
+  base_output_filename <- '_accuracy.txt'
+  
+  tree_folder <- 'simulate_output/'
+  tree_base_filename <- '.tree'
+  
+  for (m in M){
+    print(m)
+    for (s in S){
+      print(s)
+      tree_filename <- paste(tree_folder,'M',m,'/T_seed',s,tree_base_filename, sep = '')
+      for (k in K){
+        print(k)
+        input_filename <- paste(input_folder,'M',m,'_S',s,'_k',k,base_input_filename, sep = '')
+        if (file.exists(input_filename)){
+          output_filename <- paste(output_folder,'M',m,'_S',s,'_k',k,base_output_filename, sep = '')
+          inferred_output <- compare_spruce_output(input_filename, tree_filename, output_filename)
+        }
+      }
+    }
+  }
+}
+
+extract_cluster_frequency <- function(filename){
+  lines <- read_lines(filename)
+  info_lines <- grep('#', lines)
+  table <- lines[c((length(info_lines)+1):length(lines))]
+  write_lines(table, 'temp.txt')
+  mtx <- read_delim("temp.txt", "\t", escape_double = FALSE, 
+                    col_names = c('sample_index',	'sample_label',	'anatomical_site_index',	'anatomical_site_label',	
+                                  'character_index',	'character_label',	'f-',	'f+'),
+                    trim_ws = TRUE)
+  return(mtx)
+}
+
+construct_canopy_input <- function(mtx, nReads = 10000){
+
+  sample_label <- unlist(unique(mtx[,'sample_label']))
+  character_label <- unlist(unique(mtx[,'character_label']))
+  
+  k <- length(sample_label)
+  nSnv <- length(character_label)
+  
+  var_reads <- floor(unlist(mtx[,'f-'])*nReads)
+  
+  # chrom_name <- 'Chrom'
+  # nChrom <- 1
+  # nM <- 2 # major chromosomes
+  # nm <- 0 # minor chromosomes
+  # epsilon <- 0
+  
+  # WM <- matrix(data = nM, nrow = nChrom, ncol = k, dimnames = list(chrom_name, sample_label))
+  # Wm <- matrix(data = nm, nrow = nChrom, ncol = k, dimnames = list(chrom_name, sample_label))
+  
+  # Y <- matrix(data = 1, nrow = nSnv, ncol = nChrom+1, dimnames = list(character_label, c('non-cna_region', 'chrom')))
+  # rownames(Y) <- character_label
+  # colnames(Y) <- c('non-cna_region', 'chrom')
+  # Y[,1] <- 0
+  
+  R <- matrix(data = var_reads, nrow = nSnv, ncol = k, dimnames = list(character_label, sample_label))
+  X <- matrix(data = nReads, nrow = nSnv, ncol = k, dimnames = list(character_label, sample_label))
+  # rownames(R) <- character_label
+  # colnames(R) <- sample_label
+  
+  # list(WM = WM, Wm = Wm, Y = Y, R = R, X = X, epsilon = epsilon)
+  list(R = R, X = X, K = nSnv)
+}
+
 # MAIN OPERATIONS
 
-rewrite_tree2freq_for_downsample_wrapper()
-rewrite_downsample_for_spruce_wrapper()
+# rewrite_tree2freq_for_downsample_wrapper()
+# rewrite_downsample_for_spruce_wrapper()
 # snv <- num_snv_analysis()
 # ggplot(snv, aes(x=rate, y=log10(n_snv))) + geom_boxplot() + ggtitle('Mutation Count per Rate')
 # rewrite_downsample_for_spruce('downsampled_C50_P1_k2_M0.1_S0.txt')
 # rewrite_tree2freq_for_downsample_wrapper(M=c(0.1, 1), S = 1:20)
 # output <- rewrite_tree2freq_for_downsample('freqs_M0.1_S0.txt')
 
-
-
+# lines <- read_lines('~/GitHub/VAFFP-NonUniq/simulate_output/M0.1/T_seed0.tree')
+# tree <- write_tree(lines)
+# 
+# inferred_output <- compare_spruce_output('~/GitHub/VAFFP-NonUniq/enumerate_output/M0.1_S0_k1_clustered.txt', 
+#                                               '~/GitHub/VAFFP-NonUniq/simulate_output/M0.1/T_seed0.tree', 'test.txt')
+# iterate_accuracy()
 # output <- rewrite_freq_for_spruce('../frequency output/freq1.txt')
+
+mtx <-extract_cluster_frequency('~/GitHub/VAFFP-NonUniq/mix_output/M0.1_S0_k10_clustered.tsv')
+canopy_input <- construct_canopy_input(mtx, nReads = 10000000)
+
+project_name <- 'test_canopy'
+# test_canopy_output <- canopy.sample(R = canopy_input$R, X = canopy_input$X, WM = canopy_input$WM, Wm = canopy_input$Wm, 
+#                                     epsilonM = canopy_input$epsilon, epsilonm = canopy_input$epsilon, Y = canopy_input$Y)
+test_canopy_output <- canopy.sample.nocna(R = canopy_input$R, X = canopy_input$X, K = canopy_input$K+1,
+                                          numchain = 5, max.simrun = 1000,
+                                          min.simrun = 200, writeskip = 200,
+                                          projectname = projectname, cell.line = TRUE,
+                                          plot.likelihood = TRUE)
+
+for (i in 1:5){
+  filename <- paste('tree_', i, '.pdf', sep = '')
+  canopy.plottree(test_canopy_output[[1]][[2]][[i]], pdf = TRUE, pdf.name = filename)
+}
+
