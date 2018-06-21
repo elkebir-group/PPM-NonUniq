@@ -1,0 +1,4 @@
+solution	ancestral	parental	incomparable
+0	0.933333	0.875	0.952381
+1	1	1	1
+2	1	0.875	0.904762

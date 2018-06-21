@@ -1,0 +1,2 @@
+solution	ancestral	parental	incomparable
+0	1	1	1
