@@ -1,0 +1,17 @@
+1 #anatomical sites
+1 #samples
+13 #characters
+#sample_index	sample_label	anatomical_site_index	anatomical_site_label	character_index	character_label	f-	f+
+0	P_0	0	P	0	0	1	1
+0	P_0	0	P	1	1	0.930311	0.930311
+0	P_0	0	P	2	10	0.756584	0.756584
+0	P_0	0	P	3	11	0.756584	0.756584
+0	P_0	0	P	4	12	0.183208	0.183208
+0	P_0	0	P	5	2	0.930311	0.930311
+0	P_0	0	P	6	3	0.0696887	0.0696887
+0	P_0	0	P	7	4	0.756584	0.756584
+0	P_0	0	P	8	5	0.0547544	0.0547544
+0	P_0	0	P	9	6	0.0605969	0.0605969
+0	P_0	0	P	10	7	0.756584	0.756584
+0	P_0	0	P	11	8	0.756584	0.756584
+0	P_0	0	P	12	9	0.756584	0.756584

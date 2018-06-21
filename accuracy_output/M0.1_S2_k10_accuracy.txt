@@ -1,2 +1,0 @@
-"direct path" "indirect path" "no path"
-"1" 1 1 1
