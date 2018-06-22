@@ -39,6 +39,12 @@ if __name__ == "__main__":
             if p > 0:
                 sys.stdout.write(",")
             sys.stdout.write(str(a))
+        for cc in range(n):
+            sys.stdout.write(",")
+            if c == cc:
+                sys.stdout.write(str(COVERAGE/2))
+            else:
+                sys.stdout.write(str(COVERAGE))
 
-        sys.stdout.write("\t" + ",".join([str(COVERAGE) for p in range(k)]))
+        sys.stdout.write("\t" + ",".join([str(COVERAGE) for p in range(k+n)]))
         sys.stdout.write("\t1\t0.5\n")
