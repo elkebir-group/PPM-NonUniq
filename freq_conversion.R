@@ -4,6 +4,8 @@
 # add mu: (1,0,0) (1,1,1)
 
 library(readr)
+library(Canopy)
+source('update_sampling.R')
 
 annotate_descendants <- function(tree, root, parents){
   children <- which(tree[root,] == 1)
@@ -310,20 +312,22 @@ construct_canopy_input <- function(mtx, nReads = 10000){
   k <- length(sample_label)
   nSnv <- length(character_label)
   
-  var_reads <- floor(unlist(mtx[,'f-'])*nReads)
+  var_reads <- unlist(mtx[,'f-'])*nReads
   
-  # chrom_name <- 'Chrom'
-  # nChrom <- 1
-  # nM <- 2 # major chromosomes
-  # nm <- 0 # minor chromosomes
-  # epsilon <- 0
+  chrom_names <- paste('Chrom_', seq(1,nSnv,1), sep = '')
+  nChrom <- nSnv
+  nM <- 2 # major chromosomes
+  nm <- 0 # minor chromosomes
+  epsilon <- 0
   
-  # WM <- matrix(data = nM, nrow = nChrom, ncol = k, dimnames = list(chrom_name, sample_label))
-  # Wm <- matrix(data = nm, nrow = nChrom, ncol = k, dimnames = list(chrom_name, sample_label))
-  
-  # Y <- matrix(data = 1, nrow = nSnv, ncol = nChrom+1, dimnames = list(character_label, c('non-cna_region', 'chrom')))
-  # rownames(Y) <- character_label
-  # colnames(Y) <- c('non-cna_region', 'chrom')
+  WM <- matrix(data = nM, nrow = nChrom, ncol = k, dimnames = list(chrom_names, sample_label))
+  Wm <- matrix(data = nm, nrow = nChrom, ncol = k, dimnames = list(chrom_names, sample_label))
+
+  # Y <- matrix(data = 1, nrow = nSnv, ncol = nChrom+1, dimnames = list(character_label, c('non-cna_region', chrom_names)))
+  Y <- diag(x = 1, nrow = nSnv, ncol = nSnv)
+  Y <- cbind(0, Y)
+  rownames(Y) <- character_label
+  colnames(Y) <- c('non-cna_region', chrom_names)
   # Y[,1] <- 0
   
   R <- matrix(data = var_reads, nrow = nSnv, ncol = k, dimnames = list(character_label, sample_label))
@@ -331,8 +335,46 @@ construct_canopy_input <- function(mtx, nReads = 10000){
   # rownames(R) <- character_label
   # colnames(R) <- sample_label
   
-  # list(WM = WM, Wm = Wm, Y = Y, R = R, X = X, epsilon = epsilon)
-  list(R = R, X = X, K = nSnv)
+  list(WM = WM, Wm = Wm, Y = Y, R = R, X = X, epsilon = epsilon, K = nSnv)
+  # list(R = R, X = X, K = nSnv)
+}
+
+write_canopy_trees <- function(trees_list){
+  get_edges <- function(tree, tree_idx, lines){
+    edges <- tree$edge
+    lines <- c(lines, paste(nrow(edges), '#edges, tree', tree_idx, sep = ' '))
+    edge <- tree$sna[,3]
+    muts <- as.vector(rownames(tree$sna))
+    map <- cbind(muts, edge)
+    for (i in 1:nrow(edges)){
+      # print(edges[i,])
+      if (!(edges[i,1] %in% map[,2])){next}
+      # if (!(edges[i,1] %in% map[,2]) & !(edges[i,2] %in% map[,2])){next}
+      if (!(edges[i,2] %in% map[,2])){
+        # idx1 <- which(map[,2] == edges[i,1])
+        new_pair <- c(map[which(map[,2] == edges[i,1]),1], edges[i,2])
+        map <- rbind(map, new_pair)
+      }
+      idx1 <- which(map[,2] == edges[i,1])
+      idx2 <- which(map[,2] == edges[i,2])
+      # print(map);print(paste(idx1, idx2))
+      mut1 <- map[idx1,1]
+      mut2 <- map[idx2,1]
+      if (mut1 == mut2){next}
+      new_line <- paste(mut1, mut2, sep = ' ')
+      lines <- c(lines, new_line)
+    }
+    return(lines)
+  }
+  
+  num_trees <- length(trees_list)
+  
+  lines <- c(paste(num_trees, '#trees', sep = ' '))
+  for (i in 1:length(trees_list)){
+    lines <- get_edges(trees_list[[i]], i, lines)
+  }
+  
+  return(lines)
 }
 
 # MAIN OPERATIONS
@@ -353,20 +395,48 @@ construct_canopy_input <- function(mtx, nReads = 10000){
 # iterate_accuracy()
 # output <- rewrite_freq_for_spruce('../frequency output/freq1.txt')
 
-mtx <-extract_cluster_frequency('~/GitHub/VAFFP-NonUniq/mix_output/M0.1_S0_k10_clustered.tsv')
-canopy_input <- construct_canopy_input(mtx, nReads = 10000000)
+mtx <-extract_cluster_frequency('~/GitHub/VAFFP-NonUniq/mix_output/M0.4_S8_k10_clustered.tsv')
+canopy_input <- construct_canopy_input(mtx, nReads = 10^10)
 
-project_name <- 'test_canopy'
+projectname <- 'M0.4_S8_k2'
 # test_canopy_output <- canopy.sample(R = canopy_input$R, X = canopy_input$X, WM = canopy_input$WM, Wm = canopy_input$Wm, 
 #                                     epsilonM = canopy_input$epsilon, epsilonm = canopy_input$epsilon, Y = canopy_input$Y)
-test_canopy_output <- canopy.sample.nocna(R = canopy_input$R, X = canopy_input$X, K = canopy_input$K+1,
-                                          numchain = 5, max.simrun = 1000,
-                                          min.simrun = 200, writeskip = 200,
-                                          projectname = projectname, cell.line = TRUE,
-                                          plot.likelihood = TRUE)
+R <- canopy_input$R
+X <- canopy_input$X
+K <- canopy_input$K+1
+numchain <- 2
+sampchain <- canopy.sample.nocna(R = R, X = X, K = K,
+                                 # WM = canopy_input$WM, Wm = canopy_input$Wm, epsilonM = 0.001, epsilonm = 0.001,Y = canopy_input$Y,
+                                 numchain = numchain, max.simrun = 10000,
+                                 min.simrun = 2000, writeskip = 2,
+                                 projectname = projectname, cell.line = TRUE, plot.likelihood = TRUE)
 
-for (i in 1:5){
-  filename <- paste('tree_', i, '.pdf', sep = '')
-  canopy.plottree(test_canopy_output[[1]][[2]][[i]], pdf = TRUE, pdf.name = filename)
+burnin <- 100
+thin <- 5
+post <- canopy.post(sampchain = sampchain, projectname = projectname, K = K,
+                   numchain = numchain, burnin = burnin, thin = thin, 
+                   optK = K, post.config.cutoff = 0.05)
+samptreethin = post[[1]]   # list of all post-burnin and thinning trees
+
+no_clustering <- c()
+for (i in 1:length(sampchain[[1]][[1]])){
+  if (!any(duplicated(sampchain[[1]][[1]][[i]]$sna[,3]))){
+    no_clustering <- c(no_clustering, i)
+  }
 }
+# for (i in 1:length(sampchain[[1]][[2]])){
+#   if (!any(duplicated(sampchain[[1]][[2]][[i]]$sna[,3]))){
+#     no_clustering <- c(no_clustering, i)
+#   }
+# }
+print(length(no_clustering))
+print(length(sampchain[[1]][[1]]))
+no_clustering_trees <- sampchain[[1]][[1]][no_clustering]
+lines <- write_canopy_trees(no_clustering_trees)
+write_lines(lines, paste(projectname, '_canopy.txt', sep = ''))
+canopy.plottree(sampchain[[1]][[1]][[1]], pdf = TRUE, pdf.name = 'tree3.pdf')
+# for (i in 1:5){
+#   filename <- paste('tree_', i, '.pdf', sep = '')
+#   canopy.plottree(canopy_output[[1]][[2]][[i]], pdf = TRUE, pdf.name = filename)
+# }
 
