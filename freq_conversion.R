@@ -1,12 +1,174 @@
 # read in frequency output and convert to .data for spruce to enumerate
+#!/usr/bin/Rscript
 
-# add f average column
-# add mu: (1,0,0) (1,1,1)
+args <- commandArgs(trailingOnly = TRUE)
+
+input_file <- args[1]
+output_file <- args[2]
+numchain <- args[3]
+
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+} else if (length(args)==1) {
+  # default output file
+  args[2] = "out.txt"
+  args[3] = 15
+}
 
 library(readr)
 library(Canopy)
-source('update_sampling.R')
+# source('update_sampling.R')
 
+## CANOPY FUNCTION UPDATE
+
+canopy.sample.nocna = function(R, X, K, numchain, 
+                               max.simrun, min.simrun, writeskip, 
+                               projectname, cell.line = NULL,
+                               plot.likelihood = NULL) {
+  if (!is.matrix(R)) {
+    stop("R should be a matrix!")
+  }
+  if (!is.matrix(X)) {
+    stop("X should be a matrix!")
+  }
+  if (min(K) < 2) {
+    stop("Smallest number of subclones should be >= 2!\n")
+  }
+  if (is.null(cell.line)) {
+    cell.line = FALSE
+  }
+  if (is.null(plot.likelihood)) {
+    plot.likelihood = TRUE
+  }
+  if ( plot.likelihood){
+    pdf(file = paste(projectname, "_likelihood.pdf", sep = ""), width = 10, height = 5)
+  }
+  sampname = colnames(R)
+  sna.name = rownames(R)
+  sampchain = vector("list", length(K))
+  ki = 1
+  for (k in K) {
+    cat("Sample in tree space with", k, "subclones\n")
+    sampchaink = vector("list", numchain)
+    sampchaink.lik=vector('list',numchain)
+    sampchaink.accept.rate=vector('list',numchain)
+    for (numi in 1:numchain) {  # numi: number of chain
+      cat("\tRunning chain", numi, "out of", numchain, "...\n")
+      ###################################### Tree initialization #####
+      text = paste(paste(paste(paste("(", 1:(k - 1), ",", sep = ""), 
+                               collapse = ""), k, sep = ""), paste(rep(")", (k - 1)), 
+                                                                   collapse = ""), ";", sep = "")
+      runif.temp=runif(1)
+      if(k == 5 & runif.temp<0.5){
+        text = c('(1,((2,3),(4,5)));')
+      }else if(k == 6 & runif.temp < 1/3){
+        text = c('(1,((2,3),(4,(5,6))));')
+      }else if(k == 6 & runif.temp > 2/3){
+        text = c('(1,(2,((3,4),(5,6))));')
+      }else if(k == 7 & runif.temp > 1/4 & runif.temp <= 2/4){
+        text=c('(1,((2,3),(4,(5,(6,7)))));')
+      }else if(k == 7 & runif.temp > 2/4 & runif.temp <= 3/4){
+        text = c('(1,((2,3),((4,5),(6,7))));')
+      }else if(k == 7 & runif.temp > 3/4){
+        text = c('(1,((2,(3,4)),(5,(6,7))));')
+      }
+      tree <- read.tree(text = text)
+      # print(tree$edge)
+      tree$sna = initialsna(tree, sna.name)
+      # if(k>=5){tree$relation=getrelation(tree)}
+      tree$Z = getZ(tree, sna.name)
+      tree$P = initialP(tree, sampname, cell.line)
+      tree$VAF = tree$Z%*%tree$P/2
+      tree$likelihood = getlikelihood.sna(tree, R, X)
+      ###################################### Sample in tree space #####
+      sampi = 1
+      writei = 1
+      samptree = vector("list", max.simrun)
+      samptree.lik=rep(NA, max.simrun)
+      samptree.accept=rep(NA, max.simrun)
+      samptree.accept.rate=rep(NA, max.simrun)
+      while(sampi <= max.simrun){
+        ######### sample sna positions
+        tree.new = tree
+        # print(tree$edge)
+        tree.new$sna = sampsna(tree)
+        # print(tree.new$sna)
+        if (any(duplicated(tree.new$sna[,3]))){next}
+        tree.new$Z = getZ(tree.new, sna.name)
+        # print(tree.new$Z)
+        tree.new$VAF = tree.new$Z%*%tree.new$P/2
+        tree.new$likelihood = getlikelihood.sna(tree.new, R, X)
+        tree.temp=addsamptree(tree,tree.new)
+        tree=tree.temp[[1]]
+        samptree.accept[sampi]=tree.temp[[2]]
+        if (sampi%%writeskip == 0) {
+          samptree[[writei]] = tree
+          writei = writei + 1
+        }
+        samptree.lik[sampi]=tree$likelihood
+        samptree.accept.rate[sampi]=mean(samptree.accept[max(1,sampi-999):sampi])
+        # if ((sampi >= 2*min.simrun) & (samptree.lik[sampi] <= mean(samptree.lik[max((sampi-1000),1):max((sampi-1),1)])) &
+        #     (samptree.accept.rate[sampi] <= mean(samptree.accept.rate[max((sampi-1000),1):max((sampi-1),1)])) &
+        #     (samptree.accept.rate[sampi] <= 0.1)) break
+        sampi = sampi + 1
+        ######## sample P (clonal proportions)
+        tree.new = tree
+        tree.new$P = sampP(tree.new, cell.line)
+        tree.new$VAF = tree.new$Z%*%tree.new$P/2
+        tree.new$likelihood = getlikelihood.sna(tree.new, R, X)
+        tree.temp=addsamptree(tree,tree.new)
+        tree=tree.temp[[1]]
+        samptree.accept[sampi]=tree.temp[[2]]
+        if (sampi%%writeskip == 0) {
+          samptree[[writei]] = tree
+          writei = writei + 1
+        }
+        samptree.lik[sampi]=tree$likelihood
+        samptree.accept.rate[sampi]=mean(samptree.accept[max(1,sampi-999):sampi])
+        # if ((sampi >= 2*min.simrun) & (samptree.lik[sampi] <= mean(samptree.lik[max((sampi-1000),1):max((sampi-1),1)])) &
+        #     (samptree.accept.rate[sampi] <= mean(samptree.accept.rate[max((sampi-1000),1):max((sampi-1),1)])) &
+        #     (samptree.accept.rate[sampi] <= 0.1)) break
+        sampi = sampi + 1
+      }
+      sampchaink[[numi]] = samptree[1:(writei - 1)]
+      sampchaink.lik[[numi]]=samptree.lik
+      sampchaink.accept.rate[[numi]]=samptree.accept.rate
+    }
+    ###################################### plotting and saving #####
+    if (plot.likelihood) {
+      par(mfrow=c(1,2))
+      xmax=ymin=ymax=rep(NA,numchain)
+      for(i in 1:numchain){
+        xmax[i]=max(which((!is.na(sampchaink.lik[[i]]))))
+        ymin[i]=sampchaink.lik[[i]][1]
+        ymax[i]=sampchaink.lik[[i]][xmax[i]]
+      }
+      
+      plot(sampchaink.lik[[1]],xlim=c(1,max(xmax)),ylim=c(min(ymin),max(ymax)),
+           xlab='Iteration',ylab='Log-likelihood',type='l',
+           main=paste('Post. likelihood:',k,'branches'))
+      for(numi in 2:numchain){
+        points(sampchaink.lik[[numi]],xlim=c(1,max(xmax)),ylim=c(min(ymin),max(ymax)),col=numi,type='l')
+      }
+      
+      plot(sampchaink.accept.rate[[1]],ylim=c(0,1),xlim=c(1,max(xmax)),
+           xlab='Iteration',ylab='Acceptance rate',type='l',
+           main=paste('Acceptance rate:',k,'branches'))
+      for(numi in 2:numchain){
+        points(sampchaink.accept.rate[[numi]],ylim=c(0,1),xlim=c(1,max(xmax)),col=numi,type='l')
+      }
+      par(mfrow=c(1,1))
+    }
+    sampchain[[ki]] = sampchaink
+    ki = ki + 1
+  }
+  if(plot.likelihood) {
+    dev.off()
+  }
+  return(sampchain)
+} 
+
+##
 annotate_descendants <- function(tree, root, parents){
   children <- which(tree[root,] == 1)
   tree[parents, children]  <- 2
@@ -342,28 +504,27 @@ construct_canopy_input <- function(mtx, nReads = 10000){
 write_canopy_trees <- function(trees_list){
   get_edges <- function(tree, tree_idx, lines){
     edges <- tree$edge
-    lines <- c(lines, paste(nrow(edges), '#edges, tree', tree_idx, sep = ' '))
+    new_lines <- c()
     edge <- tree$sna[,3]
     muts <- as.vector(rownames(tree$sna))
     map <- cbind(muts, edge)
     for (i in 1:nrow(edges)){
-      # print(edges[i,])
       if (!(edges[i,1] %in% map[,2])){next}
-      # if (!(edges[i,1] %in% map[,2]) & !(edges[i,2] %in% map[,2])){next}
       if (!(edges[i,2] %in% map[,2])){
-        # idx1 <- which(map[,2] == edges[i,1])
         new_pair <- c(map[which(map[,2] == edges[i,1]),1], edges[i,2])
         map <- rbind(map, new_pair)
       }
       idx1 <- which(map[,2] == edges[i,1])
       idx2 <- which(map[,2] == edges[i,2])
-      # print(map);print(paste(idx1, idx2))
       mut1 <- map[idx1,1]
       mut2 <- map[idx2,1]
       if (mut1 == mut2){next}
       new_line <- paste(mut1, mut2, sep = ' ')
-      lines <- c(lines, new_line)
+      new_lines <- c(new_lines, new_line)
     }
+    
+    new_lines <- c(paste(length(new_lines), '#edges, tree', tree_idx-1, sep = ' '), new_lines)
+    lines <- c(lines, new_lines)
     return(lines)
   }
   
@@ -394,21 +555,23 @@ write_canopy_trees <- function(trees_list){
 #                                               '~/GitHub/VAFFP-NonUniq/simulate_output/M0.1/T_seed0.tree', 'test.txt')
 # iterate_accuracy()
 # output <- rewrite_freq_for_spruce('../frequency output/freq1.txt')
+projectname <- 'canopy_sampling'
+# input_file <- paste('mix_output/', projectname, '_clustered.tsv', sep = '')
 
-mtx <-extract_cluster_frequency('~/GitHub/VAFFP-NonUniq/mix_output/M0.4_S8_k10_clustered.tsv')
+mtx <-extract_cluster_frequency(input_file)
 canopy_input <- construct_canopy_input(mtx, nReads = 10^10)
 
-projectname <- 'M0.4_S8_k2'
 # test_canopy_output <- canopy.sample(R = canopy_input$R, X = canopy_input$X, WM = canopy_input$WM, Wm = canopy_input$Wm, 
 #                                     epsilonM = canopy_input$epsilon, epsilonm = canopy_input$epsilon, Y = canopy_input$Y)
 R <- canopy_input$R
 X <- canopy_input$X
 K <- canopy_input$K+1
-numchain <- 2
+# numchain <- 2
+# tic()
 sampchain <- canopy.sample.nocna(R = R, X = X, K = K,
                                  # WM = canopy_input$WM, Wm = canopy_input$Wm, epsilonM = 0.001, epsilonm = 0.001,Y = canopy_input$Y,
-                                 numchain = numchain, max.simrun = 10000,
-                                 min.simrun = 2000, writeskip = 2,
+                                 numchain = numchain, max.simrun = 100000,
+                                 min.simrun = 20000, writeskip = 200,
                                  projectname = projectname, cell.line = TRUE, plot.likelihood = TRUE)
 
 burnin <- 100
@@ -418,25 +581,26 @@ post <- canopy.post(sampchain = sampchain, projectname = projectname, K = K,
                    optK = K, post.config.cutoff = 0.05)
 samptreethin = post[[1]]   # list of all post-burnin and thinning trees
 
-no_clustering <- c()
-for (i in 1:length(sampchain[[1]][[1]])){
-  if (!any(duplicated(sampchain[[1]][[1]][[i]]$sna[,3]))){
-    no_clustering <- c(no_clustering, i)
-  }
-}
-# for (i in 1:length(sampchain[[1]][[2]])){
-#   if (!any(duplicated(sampchain[[1]][[2]][[i]]$sna[,3]))){
+# no_clustering <- c()
+# for (i in 1:length(sampchain[[1]][[1]])){
+#   if (!any(duplicated(sampchain[[1]][[1]][[i]]$sna[,3]))){
 #     no_clustering <- c(no_clustering, i)
 #   }
 # }
-print(length(no_clustering))
-print(length(sampchain[[1]][[1]]))
-no_clustering_trees <- sampchain[[1]][[1]][no_clustering]
-lines <- write_canopy_trees(no_clustering_trees)
-write_lines(lines, paste(projectname, '_canopy.txt', sep = ''))
-canopy.plottree(sampchain[[1]][[1]][[1]], pdf = TRUE, pdf.name = 'tree3.pdf')
+# # toc()
+# # for (i in 1:length(sampchain[[1]][[2]])){
+# #   if (!any(duplicated(sampchain[[1]][[2]][[i]]$sna[,3]))){
+# #     no_clustering <- c(no_clustering, i)
+# #   }
+# # }
+# print(length(no_clustering))
+# print(length(sampchain[[1]][[1]]))
+# no_clustering_trees <- sampchain[[1]][[1]][no_clustering]
+lines <- write_canopy_trees(samptreethin)
+write_lines(lines, output_file)
+# print('finished')
+# canopy.plottree(samptreethin[[1]], pdf = TRUE, pdf.name = 'tree.pdf')
 # for (i in 1:5){
 #   filename <- paste('tree_', i, '.pdf', sep = '')
 #   canopy.plottree(canopy_output[[1]][[2]][[i]], pdf = TRUE, pdf.name = filename)
 # }
-
