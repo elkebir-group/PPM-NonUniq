@@ -474,7 +474,8 @@ construct_canopy_input <- function(mtx, nReads = 10000){
   k <- length(sample_label)
   nSnv <- length(character_label)
   
-  var_reads <- unlist(mtx[,'f-'])*nReads
+  # MEK: added division by 2
+  var_reads <- unlist(mtx[,'f-'])*nReads/2
   
   chrom_names <- paste('Chrom_', seq(1,nSnv,1), sep = '')
   nChrom <- nSnv
