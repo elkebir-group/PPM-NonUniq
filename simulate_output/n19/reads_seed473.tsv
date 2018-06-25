@@ -1,0 +1,18 @@
+1 #anatomical sites
+1 #samples
+14 #mutations
+#sample_index	sample_label	anatomical_site_index	anatomical_site_label	character_index	character_label	ref	var
+0	P_0	0	P	0	0	90	92
+0	P_0	0	P	1	1	107	92
+0	P_0	0	P	2	2	108	92
+0	P_0	0	P	3	3	134	57
+0	P_0	0	P	4	4	113	68
+0	P_0	0	P	5	5	180	15
+0	P_0	0	P	6	6	178	15
+0	P_0	0	P	7	7	186	31
+0	P_0	0	P	8	8	156	57
+0	P_0	0	P	9	9	168	19
+0	P_0	0	P	10	12	170	31
+0	P_0	0	P	11	18	176	14
+0	P_0	0	P	12	22	180	41
+0	P_0	0	P	13	32	187	17
