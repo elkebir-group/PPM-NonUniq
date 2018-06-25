@@ -8,7 +8,8 @@
 #    done
 #done
 
-for n in {3,5,7,9,11,13}
+#for n in {3,5,7,9,11,13}
+for n in {15,17,19}
 do
     for f in n$n/*.tree
     do
