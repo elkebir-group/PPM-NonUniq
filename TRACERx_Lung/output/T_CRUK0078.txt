@@ -1,0 +1,8 @@
+# 6 out of 6 mutations
+1 #trees
+5 #edges, tree 1
+v5 v4
+v4 v3
+v2 v6
+v1 v5
+v1 v2

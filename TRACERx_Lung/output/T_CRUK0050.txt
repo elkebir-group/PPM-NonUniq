@@ -1,0 +1,8 @@
+# 3 out of 3 mutations
+2 #trees
+2 #edges, tree 1
+v1 v3
+v1 v2
+2 #edges, tree 2
+v2 v3
+v1 v2

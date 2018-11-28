@@ -1,0 +1,4 @@
+# 2 out of 2 mutations
+1 #trees
+1 #edges, tree 1
+v1 v2

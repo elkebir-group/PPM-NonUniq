@@ -1,0 +1,50 @@
+# 8 out of 8 mutations
+6 #trees
+7 #edges, tree 1
+v8 v5
+v8 v1
+v6 v4
+v4 v3
+v2 v8
+v2 v7
+v2 v6
+7 #edges, tree 2
+v8 v1
+v6 v5
+v6 v4
+v4 v3
+v2 v8
+v2 v7
+v2 v6
+7 #edges, tree 3
+v8 v7
+v8 v5
+v8 v1
+v6 v4
+v4 v3
+v2 v8
+v2 v6
+7 #edges, tree 4
+v8 v5
+v8 v1
+v6 v4
+v4 v3
+v2 v8
+v2 v6
+v1 v7
+7 #edges, tree 5
+v8 v7
+v8 v1
+v6 v5
+v6 v4
+v4 v3
+v2 v8
+v2 v6
+7 #edges, tree 6
+v8 v1
+v6 v5
+v6 v4
+v4 v3
+v2 v8
+v2 v6
+v1 v7

@@ -1,0 +1,522 @@
+# 8 out of 8 mutations
+65 #trees
+7 #edges, tree 1
+v6 v4
+v2 v7
+v2 v3
+v2 v1
+v1 v8
+v1 v6
+v1 v5
+7 #edges, tree 2
+v4 v6
+v2 v7
+v2 v3
+v2 v1
+v1 v8
+v1 v5
+v1 v4
+7 #edges, tree 3
+v5 v6
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 4
+v4 v6
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 5
+v5 v6
+v4 v8
+v2 v7
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 6
+v6 v8
+v6 v4
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+7 #edges, tree 7
+v6 v4
+v4 v8
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+7 #edges, tree 8
+v6 v8
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 9
+v4 v8
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 10
+v4 v8
+v4 v6
+v2 v7
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 11
+v6 v8
+v4 v6
+v2 v7
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 12
+v6 v8
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 13
+v4 v8
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 14
+v6 v8
+v4 v6
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 15
+v5 v6
+v4 v8
+v4 v5
+v2 v7
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 16
+v6 v8
+v4 v1
+v2 v7
+v2 v4
+v2 v3
+v1 v6
+v1 v5
+7 #edges, tree 17
+v5 v6
+v4 v1
+v2 v7
+v2 v4
+v2 v3
+v1 v8
+v1 v5
+7 #edges, tree 18
+v5 v6
+v4 v7
+v4 v1
+v2 v4
+v2 v3
+v1 v8
+v1 v5
+7 #edges, tree 19
+v5 v6
+v4 v1
+v2 v4
+v2 v3
+v1 v8
+v1 v7
+v1 v5
+7 #edges, tree 20
+v5 v7
+v5 v6
+v4 v1
+v2 v4
+v2 v3
+v1 v8
+v1 v5
+7 #edges, tree 21
+v6 v8
+v5 v7
+v4 v1
+v2 v4
+v2 v3
+v1 v6
+v1 v5
+7 #edges, tree 22
+v6 v8
+v4 v1
+v2 v4
+v2 v3
+v1 v7
+v1 v6
+v1 v5
+7 #edges, tree 23
+v6 v8
+v4 v7
+v4 v1
+v2 v4
+v2 v3
+v1 v6
+v1 v5
+7 #edges, tree 24
+v4 v8
+v4 v5
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v4
+7 #edges, tree 25
+v4 v8
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 26
+v6 v8
+v4 v5
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v4
+7 #edges, tree 27
+v6 v8
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 28
+v6 v4
+v4 v8
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v5
+7 #edges, tree 29
+v6 v4
+v2 v3
+v2 v1
+v1 v8
+v1 v7
+v1 v6
+v1 v5
+7 #edges, tree 30
+v6 v8
+v6 v4
+v2 v3
+v2 v1
+v1 v7
+v1 v6
+v1 v5
+7 #edges, tree 31
+v4 v6
+v2 v3
+v2 v1
+v1 v8
+v1 v7
+v1 v5
+v1 v4
+7 #edges, tree 32
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v7
+v1 v4
+7 #edges, tree 33
+v5 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v7
+v1 v4
+7 #edges, tree 34
+v4 v8
+v4 v6
+v2 v3
+v2 v1
+v1 v7
+v1 v5
+v1 v4
+7 #edges, tree 35
+v6 v8
+v4 v6
+v2 v3
+v2 v1
+v1 v7
+v1 v5
+v1 v4
+7 #edges, tree 36
+v5 v6
+v4 v8
+v2 v3
+v2 v1
+v1 v7
+v1 v5
+v1 v4
+7 #edges, tree 37
+v6 v8
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v7
+v1 v4
+7 #edges, tree 38
+v5 v6
+v4 v8
+v4 v5
+v2 v3
+v2 v1
+v1 v7
+v1 v4
+7 #edges, tree 39
+v4 v8
+v4 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 40
+v6 v8
+v4 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 41
+v6 v8
+v4 v7
+v4 v5
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 42
+v4 v8
+v4 v7
+v4 v5
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 43
+v6 v8
+v5 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 44
+v5 v7
+v4 v8
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+v1 v4
+7 #edges, tree 45
+v5 v7
+v4 v8
+v4 v5
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 46
+v6 v8
+v5 v7
+v4 v5
+v2 v3
+v2 v1
+v1 v6
+v1 v4
+7 #edges, tree 47
+v5 v6
+v4 v8
+v4 v7
+v4 v5
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 48
+v4 v8
+v4 v7
+v4 v6
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 49
+v5 v6
+v4 v8
+v4 v7
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 50
+v5 v7
+v5 v6
+v4 v8
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 51
+v5 v7
+v4 v8
+v4 v6
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 52
+v5 v7
+v5 v6
+v4 v8
+v4 v5
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 53
+v5 v7
+v4 v6
+v2 v3
+v2 v1
+v1 v8
+v1 v5
+v1 v4
+7 #edges, tree 54
+v4 v7
+v4 v6
+v2 v3
+v2 v1
+v1 v8
+v1 v5
+v1 v4
+7 #edges, tree 55
+v6 v8
+v5 v7
+v4 v6
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 56
+v6 v8
+v4 v7
+v4 v6
+v2 v3
+v2 v1
+v1 v5
+v1 v4
+7 #edges, tree 57
+v5 v7
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 58
+v6 v8
+v5 v7
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 59
+v6 v8
+v4 v7
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v4
+7 #edges, tree 60
+v4 v7
+v4 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 61
+v5 v6
+v4 v7
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 62
+v5 v7
+v5 v6
+v4 v5
+v2 v3
+v2 v1
+v1 v8
+v1 v4
+7 #edges, tree 63
+v6 v4
+v5 v7
+v4 v8
+v2 v3
+v2 v1
+v1 v6
+v1 v5
+7 #edges, tree 64
+v6 v4
+v5 v7
+v2 v3
+v2 v1
+v1 v8
+v1 v6
+v1 v5
+7 #edges, tree 65
+v6 v8
+v6 v4
+v5 v7
+v2 v3
+v2 v1
+v1 v6
+v1 v5

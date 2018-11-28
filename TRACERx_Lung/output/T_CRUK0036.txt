@@ -1,0 +1,16 @@
+# 7 out of 7 mutations
+2 #trees
+6 #edges, tree 1
+v4 v6
+v4 v5
+v4 v3
+v1 v7
+v1 v4
+v1 v2
+6 #edges, tree 2
+v4 v6
+v4 v5
+v4 v3
+v2 v7
+v1 v4
+v1 v2
