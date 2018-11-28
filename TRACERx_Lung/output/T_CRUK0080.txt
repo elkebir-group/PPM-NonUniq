@@ -1,6 +1,2 @@
 # 4 out of 4 mutations
 1 #trees
-3 #edges, tree 1
-v3 v4
-v1 v3
-v1 v2
