@@ -1,4 +1,4 @@
-index	count
-2	5000
-0	2500
-1	0
+index	count	depth
+2	5000	4
+0	2500	3
+1	0	3
